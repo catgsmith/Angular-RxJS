@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
-import { Observable, Subscription } from 'rxjs';
+import { EMPTY, Observable, of, Subscription } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { Product } from './product';
 import { ProductService } from './product.service';
@@ -20,11 +21,14 @@ export class ProductListComponent implements OnInit {
   constructor(private productService: ProductService) { }
 
   ngOnInit(): void {
-    this.products$ = this.productService.getProducts();
-      /* .subscribe(
-        products => this.products = products,
-        error => this.errorMessage = error
-      ); */
+    this.products$ = this.productService.getProducts()
+    .pipe(
+      catchError(err => {
+        this.errorMessage = err;
+        return EMPTY; // of([]);
+      })
+    );
+      
   }
 
   /* ngOnDestroy(): void {
