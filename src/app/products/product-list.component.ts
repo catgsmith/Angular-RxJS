@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 
-import { EMPTY, Observable, of, Subscription } from 'rxjs';
+import { combineLatest, EMPTY, Observable, of, Subject, Subscription } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ProductCategoryService } from '../product-categories/product-category.service';
 
@@ -15,23 +15,25 @@ import { ProductService } from './product.service';
 export class ProductListComponent {
   pageTitle = 'Product List';
   errorMessage = '';
-  selectedCategoryId = 1;
 
-  products$ = this.productService.productsWithCategory$
+  private categorySelectedSubject = new Subject<number>();
+  categorySelectedAction$ = this.categorySelectedSubject.asObservable();
+
+  products$ = combineLatest([
+    this.productService.productsWithCategory$,
+    this.categorySelectedAction$
+  ])
   .pipe(
+    map(([products, selectedCategoryId]) =>
+      products.filter( product => 
+        selectedCategoryId ? product.categoryId === selectedCategoryId : true
+    )),
     catchError(err => {
       this.errorMessage = err;
       return EMPTY; // of([]);
     })
   );
 
-  productsSimpleFilter$ = this.productService.productsWithCategory$
-  .pipe(
-    map(products => 
-      products.filter(product =>
-        this.selectedCategoryId ? product.categoryId === this.selectedCategoryId : true
-    ))
-  );
 
   categories$ = this.productCategoryService.productCategories$
   .pipe(
@@ -52,6 +54,6 @@ export class ProductListComponent {
 
   onSelected(categoryId: string): void {
     // data stream doesn't react to this change, need to add Action stream
-    this.selectedCategoryId = +categoryId; // conversion to number
+    this.categorySelectedSubject.next(+categoryId); // converting to number
   }
 }
