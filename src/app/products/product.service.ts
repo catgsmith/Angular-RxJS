@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-import { Observable, throwError } from 'rxjs';
+import { combineLatest, Observable, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
 import { Product } from './product';
 import { Supplier } from '../suppliers/supplier';
 import { SupplierService } from '../suppliers/supplier.service';
+import { ProductCategoryService } from '../product-categories/product-category.service';
 
 @Injectable({
   providedIn: 'root'
@@ -16,14 +17,26 @@ export class ProductService {
   private suppliersUrl = this.supplierService.suppliersUrl;
 
   // variable declaration above constructor
+  // All products
   products$ = this.http.get<Product[]>(this.productsUrl)
-  .pipe(
-    //map(item => item.price * 1.5),
-    map(products => 
+    .pipe(
+      tap(data => console.log('Products', JSON.stringify(data))),
+      catchError(this.handleError)
+    );
+
+  // Combine products with categories
+  // Map to the revised shape.
+  productsWithCategory$ = combineLatest([
+    this.products$,
+    this.productCategoryService.productCategories$
+  ]).pipe(
+    // destructuring, from stream containing array of product and array of categories
+    map(([products, categories]) => 
       products.map(product => ({
         ...product, 
         price: product.price * 1.5,
-        searchKey: [product.productName]
+        searchKey: [product.productName],
+        category: categories.find(c => product.categoryId === c.id).name,
       }) as Product) // to disambiguate the curly braces add parenthesis, arrow function
     ),
     tap(data => console.log('Products: ', JSON.stringify(data))),
@@ -31,7 +44,8 @@ export class ProductService {
   );
 
   constructor(private http: HttpClient,
-              private supplierService: SupplierService) { }
+              private supplierService: SupplierService,
+              private productCategoryService: ProductCategoryService) { }
 
 
   private fakeProduct(): Product {
