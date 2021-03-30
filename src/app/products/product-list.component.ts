@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 
 import { EMPTY, Observable, of, Subscription } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { ProductCategoryService } from '../product-categories/product-category.service';
 
 import { Product } from './product';
 import { ProductService } from './product.service';
@@ -14,7 +15,6 @@ import { ProductService } from './product.service';
 export class ProductListComponent {
   pageTitle = 'Product List';
   errorMessage = '';
-  categories;
   selectedCategoryId = 1;
 
   products$ = this.productService.productsWithCategory$
@@ -33,14 +33,25 @@ export class ProductListComponent {
     ))
   );
 
+  categories$ = this.productCategoryService.productCategories$
+  .pipe(
+    catchError(err => {
+      this.errorMessage = err;
+      return EMPTY;
+    })
+  );
 
-  constructor(private productService: ProductService) { }
+
+  constructor(
+    private productService: ProductService, 
+    private productCategoryService: ProductCategoryService) { }
 
   onAdd(): void {
     console.log('Not yet implemented');
   }
 
   onSelected(categoryId: string): void {
-    console.log('Not yet implemented');
+    // data stream doesn't react to this change, need to add Action stream
+    this.selectedCategoryId = +categoryId; // conversion to number
   }
 }
