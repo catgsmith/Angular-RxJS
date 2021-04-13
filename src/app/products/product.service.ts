@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { BehaviorSubject, combineLatest, merge, Observable, Subject, throwError } from 'rxjs';
-import { catchError, map, scan, tap } from 'rxjs/operators';
+import { catchError, map, scan, shareReplay, tap } from 'rxjs/operators';
 
 import { Product } from './product';
 import { Supplier } from '../suppliers/supplier';
@@ -43,6 +43,7 @@ export class ProductService {
       }) as Product) // to disambiguate the curly braces add parenthesis, arrow function
     ),
     tap(data => console.log('Products: ', JSON.stringify(data))),
+    shareReplay(1),
     catchError(this.handleError)
   );
 
@@ -54,8 +55,8 @@ export class ProductService {
       map(([products, selectedProductId]) =>
         products.find(product => product.id === selectedProductId)
       ),
-      tap(product => console.log('selectedProduct', product)
-      )
+      tap(product => console.log('selectedProduct', product)),
+      shareReplay(1)
     );
 
   private productInsertedSubject = new Subject<Product>();
